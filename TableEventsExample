@@ -1,0 +1,318 @@
+import 'dart:collection';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:sdprs/Common/AppColor.dart';
+import 'package:table_calendar/table_calendar.dart';
+import 'package:get/get.dart';
+import '../../Common/MenuWidget.dart';
+import '../../Common/allTextStyles.dart';
+import '../../Common/widgetsCommon.dart';
+
+class TableEventsExample extends StatefulWidget {
+  @override
+  _TableEventsExampleState createState() => _TableEventsExampleState();
+}
+
+class _TableEventsExampleState extends State<TableEventsExample> {
+  Map<DateTime, List<Event>> selectedEvents = {};
+  CalendarFormat format = CalendarFormat.month;
+  DateTime selectedDay = DateTime.now();
+  DateTime focusedDay = DateTime.now();
+
+  TextEditingController _eventController = TextEditingController();
+
+  @override
+  void initState() {
+    selectedEvents = {};
+    WidgetsBinding.instance!.addPostFrameCallback((_) {
+
+      setState(() {
+        selectedEvents[selectedDay] = [Event(title: "Test")];
+        selectedEvents[selectedDay]!.add(Event(title: "Test1"),);
+        selectedEvents[DateTime.now().subtract(Duration(days:1))] = [Event(title: "Test2")];
+      });
+      //print( ' ${_events.toString()} ');
+    });
+
+    super.initState();
+  }
+
+
+  List<Event> _getEventsfromDay(DateTime date) {
+    return selectedEvents[date] ?? [];
+  }
+
+  @override
+  void dispose() {
+    _eventController.dispose();
+    super.dispose();
+  }
+
+  _showAddDialog() async {
+    ThemeData theme = Theme.of(context);
+    return showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            titlePadding:
+                const EdgeInsets.only(top: 15.0, left: 10.0, right: 10.0),
+            contentPadding: EdgeInsets.all(5),
+            insetPadding: EdgeInsets.only(left: 20, right: 20),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.all(Radius.circular(10.0))),
+            title: Container(
+              width: MediaQuery.of(context).size.width,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(left: 10.0),
+                        child: Text('Event',
+                            textAlign: TextAlign.left,
+                            style: GoogleFonts.raleway(
+                                color: theme.primaryColor, fontSize: 18)),
+                      ),
+                      Container(
+                        height: 22,
+                        width: 22,
+                        decoration: BoxDecoration(
+                            color: Color(0xffA7ACAF), shape: BoxShape.circle),
+                        child: GestureDetector(
+                          child: const Icon(
+                            Icons.close,
+                            color: Colors.white,
+                            size: 18,
+                          ),
+                          onTap: () {
+                            Navigator.of(context).pop(false);
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 20),
+                  Padding(
+                    padding: EdgeInsets.only(left: 5.0, right: 5.0),
+                    child: TextField(
+                      decoration:
+                          new InputDecoration(hintText: 'Enter event details'),
+                      maxLines: 2,
+                      controller: _eventController,
+                    ),
+                  ),
+                  SizedBox(height: 5),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                          onPressed: () {
+                            Navigator.of(context).pop(false);
+                          },
+                          child: Text("Cancle")),
+                      TextButton(
+                          onPressed: () {
+                            if (_eventController.text.isEmpty) {
+                            } else {
+                              if (selectedEvents[selectedDay] != null) {
+                                selectedEvents[selectedDay]!.add(
+                                  Event(title: _eventController.text),
+                                );
+                              } else {
+                                selectedEvents[selectedDay] = [
+                                  Event(title: _eventController.text)
+                                ];
+                              }
+                              setState(() {});
+                            }
+                            Navigator.pop(context);
+                            _eventController.clear();
+                          },
+                          child: Text(
+                            "Add",
+                            style: GoogleFonts.raleway(color: Colors.red),
+                          ))
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    ThemeData theme = Theme.of(context);
+    return Scaffold(
+      resizeToAvoidBottomInset: false,
+      appBar: AppBar(
+        leading: MenuWidget(),
+        title: Text('Calendar - Events'),
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            TableCalendar(
+              calendarBuilders: CalendarBuilders(
+                singleMarkerBuilder: (context, date, event) {
+                  Color cor = Colors.red;
+                  return Container(
+                    decoration:
+                        BoxDecoration(shape: BoxShape.circle, color: cor),
+                    width: 5,
+                    height: 5,
+                    margin: const EdgeInsets.only(left: 2, bottom: 1),
+                  );
+                },
+                selectedBuilder: (context, date, events) => Container(
+                    margin: const EdgeInsets.all(4.0),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                        color: AppColor.Drawer_COLOR_Light,
+                        borderRadius: BorderRadius.circular(8.0)),
+                    child: Text(
+                      date.day.toString(),
+                      style: TextStyle(color: Colors.white),
+                    )),
+                todayBuilder: (context, date, events) => Container(
+                    margin: const EdgeInsets.all(4.0),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                        border: Border.all(
+                          color: AppColor.Drawer_COLOR_Light,
+                          width: 1.2,
+                        ),
+                        //color: AppColor.Drawer_COLOR_Light1.withOpacity(0.7),
+                        borderRadius: BorderRadius.circular(8.0)),
+                    child: Text(
+                      date.day.toString(),
+                    )),
+                dowBuilder: (context, day) {
+                  if (day.weekday == DateTime.sunday) {
+                    final text = DateFormat.E().format(day);
+                    return Center(
+                      child: Text(
+                        text,
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    );
+                  }
+                },
+              ),
+              focusedDay: selectedDay,
+              firstDay: DateTime(1990),
+              lastDay: DateTime(2050),
+              calendarFormat: format,
+              onFormatChanged: (CalendarFormat _format) {
+                setState(() {
+                  format = _format;
+                });
+              },
+              startingDayOfWeek: StartingDayOfWeek.monday,
+              daysOfWeekVisible: true,
+              //Day Changed
+              onDaySelected: (DateTime selectDay, DateTime focusDay) {
+                setState(() {
+                  selectedDay = selectDay;
+                  focusedDay = focusDay;
+                });
+                print(focusedDay);
+              },
+              selectedDayPredicate: (DateTime date) {
+                return isSameDay(selectedDay, date);
+              },
+              eventLoader: _getEventsfromDay,
+              //To style the Calendar
+              calendarStyle: CalendarStyle(
+                isTodayHighlighted: true,
+                canMarkersOverflow: true,
+                weekendTextStyle: TextStyle(
+                  fontWeight: FontWeight.normal,
+                ),
+                todayTextStyle: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18.0,
+                    color: Colors.white),
+                defaultDecoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8.0),
+                ),
+                weekendDecoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8.0),
+                ),
+              ),
+              headerStyle: HeaderStyle(
+                titleCentered: true,
+                formatButtonDecoration: BoxDecoration(
+                  color: AppColor.Drawer_COLOR_Light,
+                  borderRadius: BorderRadius.circular(8.0),
+                ),
+                formatButtonTextStyle: TextStyle(color: Colors.white),
+                formatButtonShowsNext: false,
+              ),
+            ),
+            ..._getEventsfromDay(selectedDay).map(
+              (Event event) => Card(
+                margin: EdgeInsets.only(left: 10, right: 10, top: 10),
+                shape: RoundedRectangleBorder(
+                  side: BorderSide(color: Colors.black, width: 0.15),
+                  borderRadius: BorderRadius.circular(0),
+                ),
+                child: ListTile(
+                  onLongPress: () {
+                    var title = event.title;
+                    deleteDialog(context, theme, 'Delete',
+                        'Are you sure, you want to delete $title Information?',
+                        () {
+                      print(event.title);
+                      if (selectedEvents[selectedDay] != null) {
+                        //var ob=Event(title: event.title);
+                        selectedEvents[selectedDay]!.remove(event);
+                      }
+                      setState(() {});
+                      Navigator.of(context).pop(false);
+                    });
+                  },
+                  title: Text(
+                    event.title,
+                    style: textStyleHomeLable(
+                        context,
+                        Get.isDarkMode
+                            ? Colors.white60
+                            : theme.primaryColor.withOpacity(0.8)),
+                  ),
+                  //title: Text('${value[index]}',style: TextStyle(color: Colors.black),),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        backgroundColor: AppColor.Drawer_COLOR_Light1,
+        label: Text(
+          "Add Event",
+          style: TextStyle(
+            color: Colors.white,
+          ),
+        ),
+        icon: Icon(
+          Icons.add,
+          color: Colors.white,
+        ),
+        onPressed: _showAddDialog,
+      ),
+    );
+  }
+}
+
+class Event {
+  final String title;
+
+  Event({required this.title});
+
+  String toString() => this.title;
+}
